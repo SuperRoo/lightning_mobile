@@ -1,0 +1,9 @@
+{"success":true,
+"results": [{"recordID":1,"title":"1. Eliminate","text":"Eliminate the Hazard"},
+			{"recordID":2,"title":"2. Substitute","text":"Substitute with less hazardous material, process or equipment"},
+			{"recordID":3,"title":"3. Redesign","text":"Redesign equipment or work process"},
+			{"recordID":4,"title":"4. Isolate", "text":"Isolate the Hazard"},
+			{"recordID":5,"title":"5. Administrative","text":"Induce administrative controls"},
+			{"recordID":6,"title":"6. PPE <span style='color:red;'>(last resort)<span>","text":"Use appropriate Personal Protective Equipment"}
+		]
+}

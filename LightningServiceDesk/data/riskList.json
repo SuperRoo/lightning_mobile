@@ -1,0 +1,51 @@
+{'success':true,
+ 'results':[
+	{
+            'RecordID': 2,
+	    'TypeID': 1,
+	    'Description': 'Electricity',
+	    'Checked': 'checked',
+	},
+        {
+            'RecordID': 3,
+	    'TypeID': 1,
+	    'Description': 'Vehicles',
+	    'Checked': '',
+	},
+        {
+            'RecordID': 9,
+	    'TypeID': 2,
+	    'Description': 'Struck by',
+	    'Checked': '',
+	},
+        {
+            'RecordID': 10,
+	    'TypeID': 2,
+	    'Description': 'Caught in/between/on',
+	    'Checked': '',
+	},
+        {
+            'RecordID': 11,
+	    'TypeID': 2,
+	    'Description': 'Strain/over exertion',
+	    'Checked': '',
+	},
+        {
+            'RecordID': 12,
+	    'TypeID': 2,
+	    'Description': 'Dropped objects',
+	    'Checked': '',
+	},
+        {
+            'RecordID': 5,
+	    'TypeID': 3,
+	    'Description': 'Basic Fault Finding on LV Panels',
+	    'Checked': '',
+	},
+        {
+            'RecordID': 6,
+	    'TypeID': 3,
+	    'Description': 'Isolation& Work on Electrical Equipment',
+	    'Checked': '',
+	}]
+}

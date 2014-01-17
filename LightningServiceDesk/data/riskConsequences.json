@@ -1,0 +1,7 @@
+{"success":true,
+"results": [{"value":"1","text":"Catastrophic"},
+			{"value":"2","text":"Major"},
+			{"value":"3","text":"Moderate"},
+			{"value":"4","text":"Minor"},
+			{"value":"5","text":"Insignificant"}]
+}

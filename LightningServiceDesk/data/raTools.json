@@ -1,0 +1,10 @@
+{"success":true,
+"results": [{"text": "Site",  "id": 1, "chkVisible":"hidden", "checked":"", "style":"background-color:Gray"},
+ {"text": "Are exits clear",  "id": 2, "chkVisible":"visible", "checked":"", "style":"margin-left:2em"},
+ {"text": "Are safe barriers in place",  "id": 3, "chkVisible":"visible", "checked":"checked", "style":"margin-left:2em"},
+ {"text": "Climate",  "id": 4, "chkVisible":"hidden", "checked":"", "style":"background-color:Gray"},
+ {"text": "Wet weather",  "id": 5, "chkVisible":"visible", "checked":"", "style":"margin-left:2em"},
+ {"text": "Heating Precautions",  "id": 6, "chkVisible":"visible", "checked":"", "style":"margin-left:2em"},
+ {"text": "Height",  "id": 7, "chkVisible":"hidden", "checked":"", "style":"background-color:Gray"},
+ {"text": "Can you fall",  "id": 8, "chkVisible":"visible", "checked":"", "style":"margin-left:2em"}
+ ]}

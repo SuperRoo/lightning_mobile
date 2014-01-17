@@ -1,0 +1,73 @@
+ .x-list-normal .x-list-item.x-list-item-tpl, .x-list-normal .x-list-item .x-dock-horizontal {
+border-top: 1px solid #dedede;
+background: #ffffff;
+}
+.m-grid-side
+        {
+            background-color:Black;
+            width:20px; color:White;
+        }
+.m-grid-top
+        {
+            background-color:Black;
+            width:20px; 
+            color:White;
+            text-align:center;            
+        }
+.m-grid-headerButton
+  { width:40px;
+    background-color:White;
+    width:40px;
+            }
+.m-grid-sideButton{}
+.m-grid-greenButton
+        { background:#6AE46A;
+            }
+.m-grid-redButton
+        { background:#F69698;
+            }
+.m-grid-yellowButton
+        {
+            background:E9E976}
+.m-grid-blank{
+    	 background-color:White;    	
+         width:40px;
+    	color:White;
+         text-align:center;
+    
+    }
+.m_text_RiskYellow .x-form-field {
+         background-color:#E9E976 !important;
+}
+.m_text_RiskRed .x-form-field {
+         background-color:#F69698 !important;
+}
+.m_text_RiskGreen .x-form-field {
+         background-color:#6AE46A !important;
+}
+.x-input-el::-webkit-input-placeholder {
+ /* WebKit browsers (Chrome, Safari...) */
+    color: #999;
+}
+
+
+.x-input-el::-moz-placeholder {
+ /* Mozilla Firefox */
+    color: #999;
+}
+
+
+.x-input-el::-ms-input-placeholder {
+ /* Internet Explorer 10+ */
+    color: #999;
+}
+.m_label_background{
+    background-color:#f7f7f7;
+    font-size:.8em;
+    font-weight:bold;
+    text-shadow:#fff 0 1px 1px;
+    color:#333333;padding:0.6em;!important;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}

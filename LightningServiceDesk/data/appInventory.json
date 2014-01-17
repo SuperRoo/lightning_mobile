@@ -1,0 +1,21 @@
+[
+        {
+            "id": 1,
+	    "itemNumber": "WD1003492",
+	    "name": "Wall Plug - 2 socket",
+	    "quantity": 10
+	},
+        {
+            "id": 5,
+	    "itemNumber": "WD2005465",
+	    "name": "Wall plate 3 switch",
+	    "quantity": 5
+
+	},
+	{
+            "id": 2,
+	    "itemNumber": "WP0008897",
+	    "name": "Cable 3 core 10amp",
+	    "quantity": 100
+	}
+]

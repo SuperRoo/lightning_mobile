@@ -1,0 +1,8 @@
+{"success":true,
+"results": [{"value":1,"text":"Almost Certain"},
+			{"value":2,"text":"Likely"},
+			{"value":3,"text":"Moderate"},
+			{"value":4,"text":"Unlikely"},
+			{"value":5,"text":"Rare"}]
+}
+
