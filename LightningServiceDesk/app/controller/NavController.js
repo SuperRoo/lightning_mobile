@@ -91,12 +91,13 @@ Ext.define('Mob2.controller.NavController', {
     },
 
     onCmdAppointmentsTap: function(button, e, eOpts) {
-        Ext.Viewport.setMasked({ xtype: 'loadmask', indicator: true, message: 'Fetching Data....'});
+        Ext.Viewport.setMasked({ message: 'Loading...' });
         Mob2.app.getApplication().getController('ctlCommon').loadAppointments(); 
     },
 
     onNavMainBack: function(navigationview, eOpts) {
-
+        alert('gone back');
+        debugger;
     },
 
     onCmdTimesheetsTap: function(button, e, eOpts) {

@@ -39,7 +39,7 @@ Ext.define('Mob2.view.frmCarousel', {
                         label: 'Customer',
                         name: 'customer',
                         placeHolder: '',
-                        readOnly: false
+                        readOnly: true
                     },
                     {
                         xtype: 'textfield',

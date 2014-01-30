@@ -35,8 +35,6 @@ Ext.define('Mob2.controller.Details', {
             activityTimeOut: '#frmCarousel #frmActivity #txtTimeOut',
             inventoryForm: 'carousel #inventoryForm',
             carousel: '#frmCarousel',
-            formAttachment: 'carousel #frmAttachment',
-            listAttachment: 'frmAttachment #lstAttachment',
             frmActivity: '#frmActivity',
             frmSignOff: '#frmSignOff',
             frmInventory: '#frmCarousel #frmInventory',
@@ -79,12 +77,6 @@ Ext.define('Mob2.controller.Details', {
             },
             "#inventoryToolbarDone": {
                 tap: 'onInventoryToolbarDoneTap'
-            },
-            "list#lstAttachments": {
-                itemsingletap: 'onLstAttachmentsItemSingletap'
-            },
-            "button#cmdAttachmentAdd": {
-                tap: 'onCmdAttachmentAddTap'
             },
             "button#cmdSignOffSave": {
                 tap: 'onCmdSignOffSaveTap'
@@ -142,49 +134,27 @@ Ext.define('Mob2.controller.Details', {
         var store = null;
         Ext.Viewport.setMasked({ message: 'Loading...' });
         if(me.getApplication().getController('ctlCommon').IsSysValue('SD_IsInventorySynched')){    
-            if (!me.getFrmInventoryPicker()){
-                console.log(' New Inventory');
-                Ext.create('Mob2.view.inventoryPicker'); 
-                // set inventory store
-                store = Ext.getStore('InventoryMainLocal');
-                var lst = me.getFrmInventoryPicker().child('#inventoryListMain');    
-                lst.setStore(store);
-                lst.refresh();    	
-            }
-            me.getFrmInventoryPicker().child('#inventoryListMain').deselectAll();
-            Ext.Viewport.add(me.getFrmInventoryPicker());
-            Ext.Viewport.setActiveItem(me.getFrmInventoryPicker());
+            me.itemGetList();
         }else{
             store = Ext.getStore('InventoryUserLocal');
-            console.log('geting item');    
-            Ext.Msg.prompt('Lightning', 'Please enter item name:', function(btn,text) { 
-                if(btn === 'ok'){
-                    if(text !== ''){
-                        var idno = Mob2.app.getApplication().getController('ctlCommon').getMaxID(store);       
-                        var record =  Ext.create("Mob2.model.InventoryUser", {
-                            recordID:idno,
-                            name: text,
-                            quantity: 0,
-                            cost: 0,
-                            appointmentID:Mob2.appointmentID,
-                            showCost:'visible',
-                            itemNumber:'',
-                            mode:1
-
-                        });
-                        record.setDirty();
-                        store.add(record);
-                        console.log('UserInventory Count: ' + store.getCount());
-                        store.sync();
-                        me.writeInventory();
+            if (Ext.getStore('InventoryMainLocal').getCount() === 0){    
+                me.itemGetSingle();
+            }else{
+                var promptBox = Ext.Msg;
+                promptBox.buttonText={
+                    no: 'single',			
+                    yes: 'list'
+                };
+                promptBox.prompt('Lightning', 'Do you want to choose for a list or add single item', function(btn,text){
+                    if(btn === 'no'){
+                        me.itemGetSingle(); 
                     }else{
-                        Ext.Msg.alert('Lightning','you have to enter a name');
-                    }           
-                }       
-            });
+                        me.itemGetList();
+                    }
+                });
+            }
+            Ext.Viewport.setMasked(false);
         }
-        Ext.Viewport.setMasked(false);
-
     },
 
     onCmdInventorySaveTap: function(button, e, eOpts) {
@@ -224,116 +194,6 @@ Ext.define('Mob2.controller.Details', {
 
     },
 
-    onLstAttachmentsItemSingletap: function(dataview, index, target, record, e, eOpts) {
-        var me = this;
-        if(Ext.os.deviceType === 'Desktop'){
-            if(record){
-                var iframe = document.createElement("iframe");
-                iframe.src = Mob2.Config.getUrls().root + 'MobAttachmentDownload.aspx?fileid=' + record.get('recordID') + '&aptid=' + record.get('appointmentID') + '&id=' + Mob2.userID;
-                iframe.style.display = "none";
-                document.body.appendChild(iframe);
-            }
-        }else{
-            if(record){
-                  window.requestFileSystem(LocalFileSystem.PERSISTENT, 0,
-                        function(fileSys){
-                           var fileURI = fileSys.root.fullPath + '/lightning/attachments/' + record.get('fileName');
-                             window.plugins.fileOpener.open(fileURI);
-	                    },
-	                    function(error){
-                            console.log('File resolve error' + error.code);
-                        }
-                    ); 
-            }
-            
-        }
-    },
-
-    onCmdAttachmentAddTap: function(button, e, eOpts) {
-       if(Ext.os.deviceType !== 'Desktop'){
-    var me = this;
-        console.log('taking photo');
-        Ext.device.Camera.capture({
-            success: function(imageName) {
-                console.log('image: ' + image);
-                imageView.setSrc(image.fullPath);
-                alert('this is the camera image');
-               window.resolveLocalFileSystemURI(
-                        image, 
-                        function(entry){
-                           console.log('Imgae URI: ' + entry.fullPath);
-                           window.requestFileSystem(LocalFileSystem.PERSISTENT, 0,
-                                function(fileSys) {
-                                    fileSys.root.getDirectory('Lightning/Attachments/',
-                                               {create:true, exclusive: false},
-                                               function(directory){
-                                                   console.log('getDirectorySuccess:' + directory.fullPath)
-                                                   var fileID = me.generateUUID() ;
-                                                   entry.moveTo(directory, fileID + '.jpg',
-                                                       function(newEntry){
-                                                           console.log('file move success:' + newEntry.fullPath );                                                          
-                                                           me.attachmentAdd(imageName,fileID);
-                                                       },
-                                                       function(error){
-                                                           console.log('moveTo' + error.code)  
-                                                       }
-                                                   )
-                                               },
-                                               function(error){
-                                                 console.log('getDirectoryError' + error.code)  
-                                               }                               
-                                     )
-                                }
-                            )
-                        }, 
-                        function(error){
-                            console.log('resolveError' + error.code)
-                        }
-                ); 
-               
-           },
-            failure: function() {
-                console.log('Camera failure');
-            },
-            destination: 'data',    
-            source: 'camera',
-            encoding: 'jpg'
-        });
-}else{
-    Ext.Msg.alert('Lightning','function only available on mobile device');
-}
-         
-    },
-    attachmentAdd:function(imageName,fileID){
-         var store = Ext.getStore('AttachmentsLocal');
-        var idno = Mob2.app.getApplication().getController('ctlCommon').getMaxID(store);       
-        var record =  Ext.create("Mob2.model.Attachment", {
-            appointmentID:Mob2.appointmentID,
-            recordID:idno,
-            fileName: imageName,
-            fileID:fileID,
-            mineType:'application/jpeg',
-            status:1
-        });
-        record.setDirty();
-        store.add(record);
-        console.log('Attachment Count: ' + store.getCount());
-        store.sync();
-        me.setDirty(Mob2.appointmentID,'Attachment',false);
-        var attach = me.getListAttachmentt();
-        attach.setStore(store);
-        attach.refresh();
-   
-    },
-    generateUUID:function(){
-        var d = new Date().getTime();
-        var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            var r = (d + Math.random()*16)%16 | 0;
-            d = Math.floor(d/16);
-            return (c=='x' ? r : (r&0x7|0x8)).toString(16);
-        });
-        return uuid;        
-    },
     onCmdSignOffSaveTap: function(button, e, eOpts) {
         var me = this;
         me.updateSignOff();
@@ -771,19 +631,22 @@ Ext.define('Mob2.controller.Details', {
         data.riskSignature = record.get('riskSignature');
         data.riskAssessment = me.getApplication().getController('ctlCommon').getRAList(appointmentID);
         data.batch = record.get('appointmentBatch');
+        console.log('saving actvity record');
         Ext.Ajax.request({
             url: Mob2.apiURL + 'activity',    
             method:'POST',
             disableCaching: false,
             jsonData: JSON.stringify(data),
             success: function(result){ 
-                if(result.statusText === 'OK'){    	
+                if(result.statusText === 'OK'){ 
+                    console.log('saving successfule actvity record');
                     me.setDirty(appointmentID,'Activity',true); 
-                    me.getApplication().getController('ctlCommon').clearRAList(appointmentID)
+                    me.getApplication().getController('ctlCommon').clearRAList(appointmentID);
                     record.set('mode',0);
                     var batch = record.get('appointmentBatch');
                     record.set('appointmentBatch',batch+1);
                     Ext.getStore('AppointmentsLocal').sync();
+                    me.saveData();
                 }
             },
             failure: function(result){
@@ -807,17 +670,18 @@ Ext.define('Mob2.controller.Details', {
         for(r=0;r<InventoryAll.length;r++){
             record = InventoryAll[r];
             if(record.get('appointmentID') === appointmentID && record.get('mode') !== 0){
-                itemList.push({recordID:record.get('recordID'),quantity:record.get('quantity'),name:record.get('name'),cost:record.get('cost'),itemNumber:record.get('itemNumber'),mode:record.get('mode'),batch:aptRecord.get('inventoryBatch')}); 
+                itemList.push({recordID:record.get('recordID'),quantity:record.get('quantity'),name:record.get('name'),cost:record.get('cost'),itemNumber:record.get('itemNumber'),mode:record.get('mode'),batch:aptRecord.get('inventoryBatch'),appointmentID:appointmentID}); 
             }
         }
         data.data = itemList;
-        console.log('data sent: ' + JSON.stringify(data));
-        Ext.Ajax.request({
+       Ext.Ajax.request({
             url: Mob2.apiURL + 'inventorysave',
             disableCaching: false,    
             jsonData: JSON.stringify(data), 
             method:'POST',
             success: function(result){
+                console.log('inventory save success');
+                debugger;
                 if(result.statusText === 'OK'){   
                     var vals = Ext.JSON.decode(result.responseText,true);
                     if(vals && vals.status === 'success'){ 
@@ -856,7 +720,8 @@ Ext.define('Mob2.controller.Details', {
                         strInventory.sync();
                         Ext.getStore('AppointmentsLocal').sync();
                         var recInventory = null;
-                        var obj = null;                
+                        var obj = null; 
+                        me.saveData();
                     }
                 }
             },
@@ -880,7 +745,7 @@ Ext.define('Mob2.controller.Details', {
         for(r=0;r<contractorAll.length;r++){
             record = contractorAll[r];
             if(record.get('appointmentID') === appointmentID && record.get('mode') !== 0){
-                contractorList.push({recordID:record.get('recordID'),name:record.get('name'),startTime:record.get('startTime'),endTime:record.get('endTime'),riskSignature:record.get('riskSignature'),mode:record.get('mode'), isOvernight:record.get('isOvernight')}); 
+                contractorList.push({recordID:record.get('recordID'),name:record.get('name'),startTime:record.get('startTime'),endTime:record.get('endTime'),riskSignature:record.get('riskSignature'),mode:record.get('mode'), isOvernight:record.get('isOvernight'),appointmentID:appointmentID}); 
             }
         }
         data.data = contractorList;
@@ -890,7 +755,8 @@ Ext.define('Mob2.controller.Details', {
             disableCaching: false, 
             method:'POST',
             success: function(result){
-                if(result.statusText === 'OK'){   
+                if(result.statusText === 'OK'){
+                    console.log('contractor save success');
                     var vals = Ext.JSON.decode(result.responseText,true);
                     if(vals && vals.status === 'success'){ 
                         var itemList = [];
@@ -924,8 +790,9 @@ Ext.define('Mob2.controller.Details', {
                             var batch = aptRecord.get('contractorBatch');
                             aptRecord.set('contractorBatch',batch+1);
                             me.setDirty(appointmentID,'Contractor',true);
-                        })  
-                        store.sync();                             
+                        });  
+                        store.sync(); 
+                        me.saveData();
                     }
                 }
 
@@ -941,56 +808,70 @@ Ext.define('Mob2.controller.Details', {
         var me = this;
         var store=null;
         var retVal = '';
-        Ext.Viewport.setMasked(true);
+        Ext.Viewport.setMasked({
+                xtype: 'loadmask',
+                message: 'saving data'
+        });
         if(Mob2.isOnline){ 
-            var record = me.getAppointmentRecord(Mob2.appointmentID);
-            if (record.get('activityStatus') === 2){
-                retVal = me.validateData();
-            }
-            if(retVal === ''){
-                var dirtyStore = Ext.getStore('DirtyLocal');
-                dirtyStore.clearFilter();
-                var groups = null;
-                dirtyStore.filter('appointmentID',Mob2.appointmentID);
-                //check for all dirty appointments
-                dirtyStore.each(function(record){
-                    switch(record.get('name')){            
+            var record = me.getDirtyRecord(Mob2.appointmentID);
+            if(record !== null){
+                if (record.get('activityStatus') === 2 && record.get('mode') !== 0 ){
+                    retVal = me.validateData();
+                }
+                if(retVal === ''){       
+                    switch(record.get('name')){
                         case 'Inventory':
                         me.saveInventory(record.get('appointmentID'));
+                        console.log('saving inventory');
                         break;
                         case 'Contractor':
                         me.saveContractor(record.get('appointmentID'));
+                        console.log('saving contractor');
                         break;
                         case 'Activity':
                         me.saveActivity(record.get('appointmentID'));
+                        console.log('saving activity');
                         break;
                     }
-                    dirtyStore.remove(record);
-                });
-                //now do appointments - last due to status
-                dirtyStore.each(function(record){
-                    if(record.get('name') === 'Activity'){
-                        me.saveActivity(record.get('appointmentID'));
-                    }
-                });
-                Ext.Msg.alert('Lightning','All data saved');
-                var record = me.getAppointmentRecord(Mob2.appointmentID);
-                if(record.get('activityStatus') !== 1){
-                    me.getNavMain().pop();
-                }
-                me.getNavMain().setActiveItem(me.getFrmAppointments());        
-                me.getLstAppointments().refresh();
-                Ext.Viewport.setActiveItem(me.getNavMain());
-                Ext.Viewport.setMasked(false);
+                }else{
+                    Ext.Viewport.setMasked(false);
+                    Ext.Msg.alert('Lightning','validation error: ' +retVal);            
+                }        
             }else{
-                Ext.Viewport.setMasked(false);
-                Ext.Msg.alert('Lightning','validation error: ' +retVal);
+                Ext.Msg.alert('Lightning','All data saved'); 
+                me.gotoAppointmentsView();
             }
         }else{
             Mob2.app.getApplication().getController('ctlCommon').internetError();
         }
 
 
+    },
+
+    getDirtyRecord: function(appointmentID) {
+        var me = this;
+        var dirtyStore = Ext.getStore('DirtyLocal');
+        dirtyStore.clearFilter();
+        var rec = dirtyStore.findRecord('appointmentID',appointmentID);
+        if(rec === null){
+            rec = dirtyStore.first();
+            if (typeof rec === 'undefined'){
+                rec = null;
+            }
+        }
+        return rec;
+    },
+
+    gotoAppointmentsView: function() {
+        var me = this;
+        var rec = me.getAppointmentRecord(Mob2.appointmentID);
+        if(rec.get('activityStatus') !== 1){
+            me.getNavMain().pop();
+        }
+        me.getNavMain().setActiveItem(me.getFrmAppointments());        
+        me.getLstAppointments().refresh();
+        Ext.Viewport.setActiveItem(me.getNavMain());
+        Ext.Viewport.setMasked(false);
     },
 
     isTimeValid: function(timeStart, timeEnd, isOvernight) {
@@ -1046,12 +927,13 @@ Ext.define('Mob2.controller.Details', {
     setDirty: function(appointmentID, name, clear) {
         var me = this;
         var bSave = true;
-        var store = Ext.getStore('DirtyLocal')
-        var record =  store.findRecord('appointmentID',appointmentID)
+        var store = Ext.getStore('DirtyLocal');
+        var record =  store.findRecord('appointmentID',appointmentID);
         if(record){   
             if(record.get('name') === name && clear){        
-                bSave = false;
                 store.remove(record);
+                store.sync();
+                bSave = false;
             }else if(record.get('name') === name && !clear){
                 bSave = false;
             }   
@@ -1062,7 +944,7 @@ Ext.define('Mob2.controller.Details', {
             newRecord.set('name',name);
             store.add(newRecord);   
         }
-        store.sync();
+
     },
 
     getDirty: function(appointmentID, name) {
@@ -1189,6 +1071,52 @@ Ext.define('Mob2.controller.Details', {
         tpl += '</table>';
         me.getFrmInventory().setHtml(tpl);
 
+    },
+
+    itemGetSingle: function() {
+
+        var me = this;
+        Ext.Msg.prompt('Lightning', 'Please enter item name:', function(btn,text) {    
+            if(btn === 'ok'){
+                if(text !== ''){
+                    var store = Ext.getStore('InventoryUserLocal');
+                    var idno = Mob2.app.getApplication().getController('ctlCommon').getMaxID(store);       
+                    var record =  Ext.create("Mob2.model.InventoryUser", {
+                        recordID:idno,
+                        name: text,
+                        quantity: 0,
+                        cost: 0,
+                        appointmentID:Mob2.appointmentID,
+                        showCost:'visible',
+                        itemNumber:'',
+                        mode:1
+
+                    });
+                    record.setDirty();
+                    store.add(record);
+                    console.log('UserInventory Count: ' + store.getCount());
+                    store.sync();
+                    me.writeInventory();
+                }else{
+                    Ext.Msg.alert('Lightning','you have to enter a name');
+                }           
+            }       
+        });
+    },
+
+    itemGetList: function() {
+        if (!me.getFrmInventoryPicker()){
+            console.log(' New Inventory');
+            Ext.create('Mob2.view.inventoryPicker'); 
+            // set inventory store
+            var store = Ext.getStore('InventoryMainLocal');
+            var lst = me.getFrmInventoryPicker().child('#inventoryListMain');    
+            lst.setStore(store);
+            lst.refresh();    	
+        }
+        me.getFrmInventoryPicker().child('#inventoryListMain').deselectAll();
+        Ext.Viewport.add(me.getFrmInventoryPicker());
+        Ext.Viewport.setActiveItem(me.getFrmInventoryPicker());
     }
 
 });

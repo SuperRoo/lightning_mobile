@@ -108,28 +108,25 @@ Ext.define('Mob2.controller.ctlCommon', {
                 store.setProxy(proxy);
                 store.load(function(records, operation, success) {
                     //load to local
-                    if(success){
-                        var strLocal = Ext.getStore('SystemLocal');
-                        strLocal.getProxy().clear();  
-                        strLocal.data.clear();
-                        strLocal.sync();
-                        store.each(function(item){
-                            strLocal.add(item);
-                        });
-                        strLocal.sync();
-                        me.checkNavMain();
-                        if ( me.IsSysValue('IsSDUser') && !me.IsSysValue('IsTSUser')){
-                            //go straight to appointments
-                            me.loadAppointments();
-                        }else{                
-                            //go to switchboard...ts, appointments, settings
-                            Ext.Viewport.add(me.getNavMain());
-                            Ext.Viewport.setActiveItem(me.getNavMain());
-                            Ext.Viewport.setMasked(false);
-                        } 
-                    }else{              
-                        Ext.Msg.alert('Lightning','there has been a failure trying to connect to the internet<br/>please try again later');
-                    }
+                    var strLocal = Ext.getStore('SystemLocal');
+                    strLocal.getProxy().clear();  
+                    strLocal.data.clear();
+                    strLocal.sync();
+                    store.each(function(item){
+                        strLocal.add(item);
+                    });
+                    strLocal.sync();
+                    me.checkNavMain();
+                    if ( me.IsSysValue('IsSDUser') && !me.IsSysValue('IsTSUser')){
+                        //go straight to appointments
+                        me.loadAppointments();
+                    }else{                
+                        //go to switchboard...ts, appointments, settings
+                        Ext.Viewport.add(me.getNavMain());
+                        Ext.Viewport.setActiveItem(me.getNavMain());
+                        Ext.Viewport.setMasked(false);
+                    } 
+
                 });
             }else{
                 Ext.Viewport.setMasked(false);
@@ -204,189 +201,194 @@ Ext.define('Mob2.controller.ctlCommon', {
 
     loadAppointments: function() {
         console.log('loading Appointments');
+        var me = this;
         if(Mob2.isOnline){ 
-            var me = this;
-            var check;
-            var now = new Date().toUTCString();
-            console.log('appointment selected date: ' + now);
-            var url = Mob2.apiURL + 'appointments?id=' + Mob2.userID + '&selectedDate=' + encodeURIComponent(now);
-            //get appointments
-            var appointments = Ext.getStore('Appointments');
-            var proxy = appointments.getProxy();
-            proxy.setUrl(url);
-            appointments.setProxy(proxy);
-            appointments.load(function(records, operation, success) {
-                if(success){
-                    var aptList = '';
-                    if( appointments.getCount !== 0){
-                        var aptLocal = Ext.getStore('AppointmentsLocal');
-                        aptLocal.clearFilter();            
-                        aptLocal.getProxy().clear();  
-                        aptLocal.data.clear();
-                        aptLocal.sync();
-                        appointments.each(function(record){
-                            aptList += record.get('id') + ',';
-                            aptLocal.add(record);
-                        });
-                        aptLocal.filter('activityStatus',1);
-                        if( me.IsSysValue('SD_IsInventorySynched')){ 
+            //check that data has been saved
+            if(Ext.getStore('DirtyLocal').getCount() === 0){   
+                var check;
+                var now = new Date().toUTCString();
+                console.log('appointment selected date: ' + now);
+                var url = Mob2.apiURL + 'appointments?id=' + Mob2.userID + '&selectedDate=' + encodeURIComponent(now);
+                //get appointments
+                var appointments = Ext.getStore('Appointments');
+                var proxy = appointments.getProxy();
+                proxy.setUrl(url);
+                appointments.setProxy(proxy);
+                appointments.load(function(records, operation, success) {
+                    if(success){
+                        var aptList = '';
+                        if( appointments.getCount !== 0){
+                            var aptLocal = Ext.getStore('AppointmentsLocal');
+                            aptLocal.clearFilter();            
+                            aptLocal.getProxy().clear();  
+                            aptLocal.data.clear();
+                            aptLocal.sync();
+                            appointments.each(function(record){
+                                aptList += record.get('id') + ',';
+                                aptLocal.add(record);
+                            });
+                            aptLocal.filter('activityStatus',1);
+                            //if( me.IsSysValue('SD_IsInventorySynched')){ 
                             me.loadStore(Mob2.apiURL + 'inventory?id=' +  Mob2.userID ,'InventoryMain');
-                        }
-                        aptLocal.sync();
-                        //remove all dirty records
-                        Ext.getStore('DirtyLocal').removeAll();       
-                        //get contractor details
-                        var con = Ext.getStore('Contractors');
-                        var conproxy = con.getProxy();
-                        conproxy.setUrl(Mob2.apiURL + 'contractor?id=' +  Mob2.userID +  '&aptList=' +  aptList);
-                        con.load(function(records, operation, success){
-                            if(success){
-                                var conLocal = Ext.getStore('ContractorsLocal');
-                                conLocal.clearFilter();
-                                conLocal.getProxy().clear();  
-                                conLocal.data.clear();
-                                conLocal.sync();
-                                con.each(function(item){
-                                    conLocal.add(item);
-                                });
-                                conLocal.sync();
-                                //get attachment details
-                                var attach = Ext.getStore('Attachments');
-                                var attachproxy = attach.getProxy();
-                                attachproxy.setUrl(Mob2.apiURL + 'attachmentlist?id=' +  Mob2.userID + '&aptlist=' +  aptList );
-                                attach.load(function(records, operation, success){
-                                    if(success){
-                                        var attachLocal = Ext.getStore('AttachmentsLocal');
-                                        attachLocal.clearFilter();
-                                        attachLocal.getProxy().clear();  
-                                        attachLocal.data.clear();
-                                        attachLocal.sync();
-                                        attach.each(function(item){
-                                            attachLocal.add(item);
-                                        });
-                                        attachLocal.sync();
-                                        //get inventory User details
-                                        var invUser = Ext.getStore('InventoryUser');
-                                        var invUserProxy = invUser.getProxy();
-                                        invUserProxy.setUrl(Mob2.apiURL + 'inventoryuser?id=' + Mob2.userID + '&aptList=' +  aptList );
-                                        invUser.load(function(records, operation, success){
-                                            if(success){
-                                                var invUserLocal = Ext.getStore('InventoryUserLocal');
-                                                invUserLocal.clearFilter();
-                                                invUserLocal.getProxy().clear();  
-                                                invUserLocal.data.clear();
-                                                invUserLocal.sync();
-                                                invUser.each(function(item){
-                                                    invUserLocal.add(item);
-                                                });
-                                                invUserLocal.sync();
-                                                //check for risk
-                                                if(me.IsSysValue('SD_RARRequired') ){
-                                                    Mob2.toolDirty = false;
-                                                    //get raMain
-                                                    var storeRA = Ext.getStore('RAMain');
-                                                    var storeRAProxy = storeRA.getProxy();
-                                                    storeRAProxy.setUrl(Mob2.apiURL + 'ramain?id=' +  Mob2.userID );
-                                                    storeRA.load(function(records, operation, success){
-                                                        if(success){
-                                                            if(storeRA.getCount() !== 0){
-                                                                storeRALocal = Ext.getStore('RAMainLocal');
-                                                                storeRALocal.clearFilter();
-                                                                storeRALocal.getProxy().clear();  
-                                                                storeRALocal.data.clear();
-                                                                storeRALocal.sync(); 
-                                                                storeRA.each(function(item){
-                                                                    storeRALocal.add(item);
-                                                                });
-                                                                storeRALocal.sync();
-                                                            }                                                 
-                                                            //get RiskMain details
-                                                            var riskMain = Ext.getStore('RiskMain');                        
-                                                            var riskMainProxy = riskMain.getProxy();
-                                                            riskMainProxy.setUrl(Mob2.apiURL + 'riskMain?id=' +  Mob2.userID );
-                                                            riskMain.load(function(records, operation, success){
-                                                                if(success){
-                                                                    var riskMainLocal = Ext.getStore('RiskMainLocal');
-                                                                    riskMainLocal.clearFilter();
-                                                                    riskMainLocal.getProxy().clear();  
-                                                                    riskMainLocal.data.clear();
-                                                                    riskMainLocal.sync(); 
-                                                                    riskMain.each(function(item){
-                                                                        riskMainLocal.add(item);
+                            //}
+                            aptLocal.sync();
+                            //remove all dirty records
+                            Ext.getStore('DirtyLocal').removeAll();       
+                            //get contractor details
+                            var con = Ext.getStore('Contractors');
+                            var conproxy = con.getProxy();
+                            conproxy.setUrl(Mob2.apiURL + 'contractor?id=' +  Mob2.userID +  '&aptList=' +  aptList);
+                            con.load(function(records, operation, success){
+                                if(success){
+                                    var conLocal = Ext.getStore('ContractorsLocal');
+                                    conLocal.clearFilter();
+                                    conLocal.getProxy().clear();  
+                                    conLocal.data.clear();
+                                    conLocal.sync();
+                                    con.each(function(item){
+                                        conLocal.add(item);
+                                    });
+                                    conLocal.sync();
+                                    //get attachment details
+                                    var attach = Ext.getStore('Attachments');
+                                    var attachproxy = attach.getProxy();
+                                    attachproxy.setUrl(Mob2.apiURL + 'attachmentlist?id=' +  Mob2.userID + '&aptlist=' +  aptList );
+                                    attach.load(function(records, operation, success){
+                                        if(success){
+                                            var attachLocal = Ext.getStore('AttachmentsLocal');
+                                            attachLocal.clearFilter();
+                                            attachLocal.getProxy().clear();  
+                                            attachLocal.data.clear();
+                                            attachLocal.sync();
+                                            attach.each(function(item){
+                                                attachLocal.add(item);
+                                            });
+                                            attachLocal.sync();
+                                            //get inventory User details
+                                            var invUser = Ext.getStore('InventoryUser');
+                                            var invUserProxy = invUser.getProxy();
+                                            invUserProxy.setUrl(Mob2.apiURL + 'inventoryuser?id=' + Mob2.userID + '&aptList=' +  aptList );
+                                            invUser.load(function(records, operation, success){
+                                                if(success){
+                                                    var invUserLocal = Ext.getStore('InventoryUserLocal');
+                                                    invUserLocal.clearFilter();
+                                                    invUserLocal.getProxy().clear();  
+                                                    invUserLocal.data.clear();
+                                                    invUserLocal.sync();
+                                                    invUser.each(function(item){
+                                                        invUserLocal.add(item);
+                                                    });
+                                                    invUserLocal.sync();
+                                                    //check for risk
+                                                    if(me.IsSysValue('SD_RARRequired') ){
+                                                        Mob2.toolDirty = false;
+                                                        //get raMain
+                                                        var storeRA = Ext.getStore('RAMain');
+                                                        var storeRAProxy = storeRA.getProxy();
+                                                        storeRAProxy.setUrl(Mob2.apiURL + 'ramain?id=' +  Mob2.userID );
+                                                        storeRA.load(function(records, operation, success){
+                                                            if(success){
+                                                                if(storeRA.getCount() !== 0){
+                                                                    storeRALocal = Ext.getStore('RAMainLocal');
+                                                                    storeRALocal.clearFilter();
+                                                                    storeRALocal.getProxy().clear();  
+                                                                    storeRALocal.data.clear();
+                                                                    storeRALocal.sync(); 
+                                                                    storeRA.each(function(item){
+                                                                        storeRALocal.add(item);
                                                                     });
-                                                                    riskMainLocal.sync();
-                                                                    //get RiskTask details
-                                                                    var riskTask = Ext.getStore('RiskTasks');
-                                                                    riskTask.clearFilter();
-                                                                    var riskTaskProxy = riskTask.getProxy();
-                                                                    riskTaskProxy.setUrl(Mob2.apiURL + 'riskTasks?id=' +  Mob2.userID + '&aptlist=' +  aptList);
-                                                                    riskTask.load(function(records, operation, success){
-                                                                        if(success){
-                                                                            var riskTaskLocal = Ext.getStore('RiskTasksLocal');
-                                                                            riskTaskLocal.clearFilter();
-                                                                            riskTaskLocal.getProxy().clear();  
-                                                                            riskTaskLocal.data.clear();
-                                                                            riskTaskLocal.sync(); 
-                                                                            riskTask.each(function(item){
-                                                                                riskTaskLocal.add(item);
-                                                                            });
-                                                                            riskTaskLocal.sync();  
-                                                                            //get raTools if there is a main
-                                                                            if(Ext.getStore('RAMain').getCount() !== 0){
-                                                                                var toolStore = Ext.getStore('RATool');
-                                                                                var toolStoreProxy = toolStore.getProxy();
-                                                                                toolStoreProxy.setUrl(Mob2.apiURL + 'ratools?id=' +  Mob2.userID + '&aptlist=' +aptList);
-                                                                                toolStore.load(function(records, operation, success){
-                                                                                    if(success){
-                                                                                        if(toolStore.getCount() !== 0){
-                                                                                            toolStoreLocal = Ext.getStore('RAToolLocal');
-                                                                                            toolStoreLocal.clearFilter();
-                                                                                            toolStoreLocal.getProxy().clear();  
-                                                                                            toolStoreLocal.data.clear();
-                                                                                            toolStoreLocal.sync(); 
-                                                                                            toolStore.each(function(item){
-                                                                                                toolStoreLocal.add(item);
-                                                                                            });
-                                                                                            toolStoreLocal.sync();
-                                                                                        }
-                                                                                    }else{              
-                                                                                        me.internetError();
-                                                                                    }
-                                                                                })
-                                                                            }//eo Ext.getStore('RAMain') 
-                                                                        }else{              
-                                                                            me.internetError();
-                                                                        }
-                                                                    });//  riskTask.load
-                                                                }else{              
-                                                                    me.internetError();
-                                                                }
-                                                            }); // riskMain.load
-                                                        }else{              
-                                                            me.internetError();
-                                                        }
-                                                    });//eo  storeRA.load
-                                                }// eo SD_RARRequired'
-                                                me.openAppointments();//no risk so open appointments
-                                            }else{              
-                                                me.internetError();
-                                            }                      
-                                        });//eo invUser.load
-                                    }else{              
-                                        me.internetError();
-                                    } 
-                                });//attach.load
-                            }else{              
-                                me.internetError();
-                            } 
-                        });//eo Conload 
-                    }
-                }else{              
-                    me.internetError();
-                } 
-            });
-
-        }else{
+                                                                    storeRALocal.sync();
+                                                                }                                                 
+                                                                //get RiskMain details
+                                                                var riskMain = Ext.getStore('RiskMain');                        
+                                                                var riskMainProxy = riskMain.getProxy();
+                                                                riskMainProxy.setUrl(Mob2.apiURL + 'riskMain?id=' +  Mob2.userID );
+                                                                riskMain.load(function(records, operation, success){
+                                                                    if(success){
+                                                                        var riskMainLocal = Ext.getStore('RiskMainLocal');
+                                                                        riskMainLocal.clearFilter();
+                                                                        riskMainLocal.getProxy().clear();  
+                                                                        riskMainLocal.data.clear();
+                                                                        riskMainLocal.sync(); 
+                                                                        riskMain.each(function(item){
+                                                                            riskMainLocal.add(item);
+                                                                        });
+                                                                        riskMainLocal.sync();
+                                                                        //get RiskTask details
+                                                                        var riskTask = Ext.getStore('RiskTasks');
+                                                                        riskTask.clearFilter();
+                                                                        var riskTaskProxy = riskTask.getProxy();
+                                                                        riskTaskProxy.setUrl(Mob2.apiURL + 'riskTasks?id=' +  Mob2.userID + '&aptlist=' +  aptList);
+                                                                        riskTask.load(function(records, operation, success){
+                                                                            if(success){
+                                                                                var riskTaskLocal = Ext.getStore('RiskTasksLocal');
+                                                                                riskTaskLocal.clearFilter();
+                                                                                riskTaskLocal.getProxy().clear();  
+                                                                                riskTaskLocal.data.clear();
+                                                                                riskTaskLocal.sync(); 
+                                                                                riskTask.each(function(item){
+                                                                                    riskTaskLocal.add(item);
+                                                                                });
+                                                                                riskTaskLocal.sync();  
+                                                                                //get raTools if there is a main
+                                                                                if(Ext.getStore('RAMain').getCount() !== 0){
+                                                                                    var toolStore = Ext.getStore('RATool');
+                                                                                    var toolStoreProxy = toolStore.getProxy();
+                                                                                    toolStoreProxy.setUrl(Mob2.apiURL + 'ratools?id=' +  Mob2.userID + '&aptlist=' +aptList);
+                                                                                    toolStore.load(function(records, operation, success){
+                                                                                        if(success){
+                                                                                            if(toolStore.getCount() !== 0){
+                                                                                                toolStoreLocal = Ext.getStore('RAToolLocal');
+                                                                                                toolStoreLocal.clearFilter();
+                                                                                                toolStoreLocal.getProxy().clear();  
+                                                                                                toolStoreLocal.data.clear();
+                                                                                                toolStoreLocal.sync(); 
+                                                                                                toolStore.each(function(item){
+                                                                                                    toolStoreLocal.add(item);
+                                                                                                });
+                                                                                                toolStoreLocal.sync();
+                                                                                            }
+                                                                                        }else{              
+                                                                                            me.internetError();
+                                                                                        }//eo toolstore.load success
+                                                                                    })//eo toolstore load
+                                                                                }//eo Ext.getStore('RAMain') 
+                                                                            }else{              
+                                                                                me.internetError();//riskTask.load !success
+                                                                            }
+                                                                        });//  riskTask.load
+                                                                    }else{              
+                                                                        me.internetError();
+                                                                    }
+                                                                }); // riskMain.load
+                                                            }else{              
+                                                                me.internetError();//riskMain.loa !success
+                                                            }
+                                                        });//eo  storeRA.load
+                                                    }// eo SD_RARRequired'
+                                                    me.openAppointments();//no risk so open appointments
+                                                }else{              
+                                                    me.internetError();//invUser.load !success
+                                                }                      
+                                            });//eo invUser.load
+                                        }else{              
+                                            me.internetError();
+                                        } 
+                                    });//attach.load
+                                }else{              
+                                    me.internetError();
+                                } 
+                            });//eo Conload 
+                        }
+                    }else{              
+                        me.internetError();//Conload !success
+                    } 
+                });
+            }else{        
+                Ext.Msg.alert('Lightning','unsaved data please try again<br>cannot load new data');
+                me.openAppointments();
+            }
+        }else{//not online
             me.internetError();
             me.openAppointments();
         }
@@ -633,6 +635,10 @@ Ext.define('Mob2.controller.ctlCommon', {
     internetError: function() {
         Ext.Msg.alert('Lightning','there has been a failure trying to connect to the internet<br/>please try again later');
         Ext.Viewport.setMasked(false);
+    },
+
+    onFileError: function(error) {
+
     }
 
 });

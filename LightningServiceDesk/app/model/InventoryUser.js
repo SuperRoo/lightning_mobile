@@ -26,9 +26,6 @@ Ext.define('Mob2.model.InventoryUser', {
                 name: 'recordID'
             },
             {
-                name: 'itemNumber'
-            },
-            {
                 name: 'name'
             },
             {

@@ -56,7 +56,7 @@ Ext.define('Mob2.controller.Login', {
                         password: vals.password
 
                     },
-                    success: function(result){                
+                    success: function(result){  
                         if(result.status != 'success'){
                             Mob2.userID = null;
                             Ext.Msg.alert('Login Failure',result.message);

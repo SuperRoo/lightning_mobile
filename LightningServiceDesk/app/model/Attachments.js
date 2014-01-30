@@ -23,16 +23,24 @@ Ext.define('Mob2.model.Attachments', {
                 type: 'int'
             },
             {
-                name: 'name',
-                type: 'string'
-            },
-            {
                 name: 'recordID',
                 type: 'int'
             },
             {
+                name: 'fileName',
+                type: 'string'
+            },
+            {
                 name: 'fileID',
                 type: 'string'
+            },
+            {
+                name: 'mimeType',
+                type: 'string'
+            },
+            {
+                name: 'mode',
+                type: 'int'
             }
         ]
     }

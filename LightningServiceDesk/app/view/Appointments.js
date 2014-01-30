@@ -19,9 +19,11 @@ Ext.define('Mob2.view.Appointments', {
     config: {
         title: 'Appointments',
         itemId: 'AppointmentContainer',
+        ui: '',
         layout: {
             type: 'fit'
         },
+        scrollable: false,
         items: [
             {
                 xtype: 'list',

@@ -92,9 +92,7 @@ Ext.application({
         'tsDayList'
     ],
     requires: [
-        'Ext.device.Camera',
-        'Ext.device.Connection',
-        'Ext.device.Device'
+        'Ext.device.Connection'
     ],
     controllers: [
         'Login',
@@ -104,7 +102,8 @@ Ext.application({
         'ctlRisk',
         'ctlRiskRating',
         'ctlTimesheet',
-        'ctlFileSystem'
+        'ctlFileSystem',
+        'Attachment'
     ],
     name: 'Mob2',
 

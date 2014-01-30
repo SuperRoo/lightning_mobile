@@ -17,7 +17,7 @@ Ext.define('Mob2.view.RiskSignature', {
     extend: 'Ext.Container',
 
     config: {
-        title: 'Employee Signature',
+        title: 'Worker Signature',
         itemId: 'RiskSignature',
         items: [
             {
