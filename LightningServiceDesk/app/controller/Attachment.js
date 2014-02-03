@@ -54,7 +54,7 @@ Ext.define('Mob2.controller.Attachment', {
     },
 
     onLstAttachmentsItemSingletap: function(dataview, index, target, record, e, eOpts) {
-        /*var me = this;
+        var me = this;
         if(Ext.os.deviceType === 'Desktop'){
             if(record){
                 var iframe = document.createElement("iframe");
@@ -64,76 +64,59 @@ Ext.define('Mob2.controller.Attachment', {
             }
         }else{
             if(record){
-                window.requestFileSystem(LocalFileSystem.PERSISTENT, 0,
-                function(fileSys){
-                    var fileURI = fileSys.root.fullPath + '/lightning/attachments/' + record.get('fileName');
-                    window.plugins.fileOpener.open(fileURI);
-                },
+                window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, 
+                    function onFileSystemSuccess(fileSystem) {  
+                       var fileName = record.get('fileID') + '.' + record.get('name').split('.').pop();
+                        console.log('fileURI: ' + fileSystem.root.fullPath + fileName)
+                      fileSystem.root.getFile(fileName, {create: false, exclusive: false},
+                        function(fileEntry){
+                            console.log('file exists so open: ' + fileEntry.fullPath)
+                            window.plugins.fileOpener.open(fileEntry.fullPath);
+                        },
+                        function(error){
+                             console.log('file doesn"t exist');
+                            me.downloadFile(fileSystem,record,fileName);
+                            
+                        });
+                                       
+                   }, 
+                    function(error){
+                        console.log('FileSystem Error');
+                   });//eof filesystem           
+            }//eof record
+
+        }       
+    },
+    downloadFile:function(fileSystem,record,fileName){
+        console.log('made it to download file');
+        //"http://www.w3.org/2011/web-apps-ws/papers/Nitobi.pdf"
+        fileSystem.root.getFile(
+                 "dummy.html", {create: true, exclusive: false}, 
+                 function gotFileEntry(fileEntry) {
+                        var sPath = fileEntry.fullPath.replace("dummy.html","");
+                        var fileTransfer = new FileTransfer();
+                        fileEntry.remove();
+                        var URI = Mob2.apiURL + 'attachment?id=' +Mob2.userID+ '&recordID='+record.get('recordID')+'&appointmentID=' + Mob2.appointmentID;
+                        fileTransfer.download(
+                              URI,
+                              sPath + fileName,
+                              function(theFile) {
+                                   console.log("download complete: " + theFile.toURL());
+                                   window.plugins.fileOpener.open(theFile.fullPath);
+                              },
+                              function(error) {
+                                     console.log("download error source " + error.source);
+                                     console.log("download error target " + error.target);
+                                     console.log("upload error code: " + error.code);
+                              }
+                         );
+                }, 
                 function(error){
-                    console.log('File resolve error' + error.code);
-                }
-                ); 
-            }
-
-        }*/
-        Ext.Msg.alert('Lightning','feature not available this version');
+                    console.log('got FileEntry Error');
+                });//eof GotFileEntry
     },
-
-    onTakePhotoSuccess: function(image) {
-        var me = this;
-        console.log('image: ' + image);
-        window.resolveLocalFileSystemURI(image,me.onResolveSuccess,me.onResolveFail);
-
-    },
-
-    onResolveSuccess: function(fileEntry) {
-        var me = this;
-        me.fileEntry = fileEntry
-        window.requestFileSystem(LocalFileSystem.PERSISTENT, 0,me.onFileSystemSuccess,me.onFileSystemFail)
-    },
-
-    onFileSystemSuccess: function(fs) {
-        var me = this;
-        fs.root.getDirectory('Lightning/Attachments/',
-        {create:true, exclusive: false},
-        me.onCreateDirectorySuccess,
-        me.onCreateDirectoryFail);
-    },
-
-    onCreateDirectorySuccess: function(directory) {
-        var me = this;
-        console.log('getDirectorySuccess:' + directory.fullPath);
-        me.fileUID = me.generateUUID();
-        me.fileEntry.moveTo(directory, me.fileUID + '.jpg',me.OnMoveImageSuccess,me.onMoveImageFail);
-    },
-
-    OnMoveImageSuccess: function(newEntry) {
-        var me = this;
-        console.log('file move success:' + newEntry.fullPath );   
-        Ext.Msg.alert('Lightning','file move success');
-
-    },
-
-    onTakePhotoFailure: function(error) {
-        Ext.Msg.alert('Lightning','camera failure(' + error.code + ')');
-    },
-
-    onResolveFail: function(error) {
-        Ext.Msg.alert('Lightning','image location failure(' + error.code + ')');
-    },
-
-    onFileSystemFail: function(error) {
-        Ext.Msg.alert('Lightning','failure access file system(' + error.code + ')');
-    },
-
-    onCreateDirectoryFail: function(error) {
-        Ext.Msg.alert('Lightning','failure creating directory(' + error.code + ')');
-    },
-
-    onMoveImageFail: function(error) {
-        Ext.Msg.alert('Lightning','failure moving image(' + error.code + ')');
-    },
-
+   
+    
     attachmentAdd: function(imageName, fileID) {
         var store = Ext.getStore('AttachmentsLocal');
         var idno = Mob2.app.getApplication().getController('ctlCommon').getMaxID(store);       

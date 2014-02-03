@@ -92,7 +92,10 @@ Ext.application({
         'tsDayList'
     ],
     requires: [
-        'Ext.device.Connection'
+        'Ext.device.Connection',
+        'Ext.device.Device',
+        'Ext.device.FileSystem',
+        'Ext.device.Communicator'
     ],
     controllers: [
         'Login',

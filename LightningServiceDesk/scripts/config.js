@@ -2,8 +2,8 @@ Ext.define('Mob2.Config', {
     singleton : true,
     config : {
         urls : {
-            main : 'http://lightningstar1.net/MobileSvc/',
-            root : 'http://lightningstar1.net/'
+            main : 'http://devmy.star1vn.com/MobileSvc/',
+            root : 'http://devmy.star1vn.com/'
        }
        //devmy.star1vn.com
        //localhost/Lightning_My

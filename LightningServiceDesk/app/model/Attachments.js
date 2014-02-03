@@ -27,7 +27,7 @@ Ext.define('Mob2.model.Attachments', {
                 type: 'int'
             },
             {
-                name: 'fileName',
+                name: 'name',
                 type: 'string'
             },
             {
