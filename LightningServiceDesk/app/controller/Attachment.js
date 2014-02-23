@@ -22,8 +22,8 @@ Ext.define('Mob2.controller.Attachment', {
         ],
 
         refs: {
-            listAttachment: 'frmAttachment #lstAttachment',
-            formAttachment: 'carousel #frmAttachment'
+            listAttachment: '#frmAttachments #lstAttachments',
+            formAttachment: '#frmCarousel #frmAttachments'
         },
 
         control: {
@@ -37,24 +37,104 @@ Ext.define('Mob2.controller.Attachment', {
     },
 
     onCmdAttachmentAddTap: function(button, e, eOpts) {
-        /*if(Ext.os.deviceType !== 'Desktop'){
-            var me = this;
-            console.log('taking photo');
-            Ext.device.Camera.capture({
-                success: me.onTakePhotoSuccess,
-                failure: me.onTakePhotoFailure,
-                destination: 'file',    
-                source: 'camera',
-                encoding: 'jpg'
-            });
+        var me = this;
+        var my = this;
+       if(Ext.os.deviceType !== 'Desktop'){
+            console.log('onCmdAttachmentAddTap: taking photo');
+           navigator.camera.getPicture(function(image){
+                   console.log('onCmdAttachmentAddTap: photo taken: ' + image);
+                    onPhotoTaken(image);
+               }, 
+               function(error){
+                  console.log('onCmdAttachmentAddTap: error taking photo: ' + error.code); 
+               }, 
+               { quality: 50,
+                 destinationType: Camera.DestinationType.FILE_URI,
+                 sourceType : Camera.PictureSourceType.CAMERA,
+                 encodingType: Camera.EncodingType.JPEG               
+                });            
         }else{
             Ext.Msg.alert('Lightning','function only available on mobile device');
-        }*/
-        Ext.Msg.alert('Lightning','feature not available this version');
+        }
+        //resolve file system
+        function onPhotoTaken(image){
+            var me = this;
+         console.log('onPhotoTaken: ' );
+        window.resolveLocalFileSystemURI(image, 
+                function(fileEntry){
+                     console.log('onPhotoTaken: resolved file success : ' + fileEntry.fullpath);
+                    onImageResolved(fileEntry);
+                }, 
+                function(error){
+                    console.log('onPhotoTaken: File Resolve Error');
+                }
+            );     
+        }
+        //resolve image
+        function onImageResolved(fileEntry){
+            var me = this;
+            window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, 
+                    function(fileSystem) {
+                        console.log('onImageResolved: filesystem success: ' );
+                        var fileID = generateUUID();
+                          fileEntry.moveTo(fileSystem.root,fileID + '.jpg',
+                                function(newFile){
+                                    console.log('onImageResolved: moveTo success: ' );
+                                 attachmentAdd('Image.jpg', fileID,newFile);                                 
+                                },
+                        function(error){
+                            console.log('onImageResolved: error movingfile');   
+                        });
+                   }, 
+                   function(error){
+                       console.log('onImageResolved: error getting file system');            
+                   }
+            );        
+        }
+        //attachment add to store
+        function attachmentAdd(imageName, fileID, fileEntry) {
+             var me = this;
+            console.log('attachmentAdd: ' +imageName );
+            var store = Ext.getStore('AttachmentsLocal');
+            var idno = Mob2.app.getApplication().getController('ctlCommon').getMaxID(store);  
+            var aptRecord =  Mob2.app.getApplication().getController('Details').getAppointmentRecord(Mob2.appointmentID)
+              var record =  Ext.create("Mob2.model.Attachments", {
+                    appointmentID:Mob2.appointmentID,
+                    recordID:idno,
+                    name: imageName,
+                    fileID:fileID,
+                    mimeType:'application/jpeg',
+                    mode:1,
+                    batch:aptRecord.get('attachmentBatch')
+            });
+            console.log('attachmentAdd: record imagename: ' + record.get('name'));
+            console.log('attachmentAdd: created record');
+            record.setDirty();
+            store.add(record);
+            console.log('attachmentAdd: Attachment Count: ' + store.getCount());
+            store.sync();
+            console.log('attachmentAdd:Set dirty');
+            Mob2.app.getApplication().getController('Details').setDirty(Mob2.appointmentID,'Attachment',false);
+            var attach = my.getListAttachment();
+            attach.setStore(store);
+            attach.refresh();
+            Mob2.app.getApplication().getController('Details').saveData();   
+        }
+        //genertate UUID
+        function generateUUID() {
+            var d = new Date().getTime();
+            var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = (d + Math.random()*16)%16 | 0;
+                d = Math.floor(d/16);
+                return (c=='x' ? r : (r&0x7|0x8)).toString(16);
+            });
+            return uuid;
+        }
     },
-
+   
     onLstAttachmentsItemSingletap: function(dataview, index, target, record, e, eOpts) {
         var me = this;
+        var my=this;
         if(Ext.os.deviceType === 'Desktop'){
             if(record){
                 var iframe = document.createElement("iframe");
@@ -64,31 +144,40 @@ Ext.define('Mob2.controller.Attachment', {
             }
         }else{
             if(record){
-                window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, 
-                    function onFileSystemSuccess(fileSystem) {  
-                       var fileName = record.get('fileID') + '.' + record.get('name').split('.').pop();
-                        console.log('fileURI: ' + fileSystem.root.fullPath + fileName)
-                      fileSystem.root.getFile(fileName, {create: false, exclusive: false},
-                        function(fileEntry){
-                            console.log('file exists so open: ' + fileEntry.fullPath)
-                            window.plugins.fileOpener.open(fileEntry.fullPath);
-                        },
-                        function(error){
-                             console.log('file doesn"t exist');
-                            me.downloadFile(fileSystem,record,fileName);
-                            
-                        });
-                                       
-                   }, 
-                    function(error){
-                        console.log('FileSystem Error');
-                   });//eof filesystem           
+                 console.log('onLstAttachmentsItemSingletap: made it to load');
+                Ext.Viewport.setMasked({
+                        xtype: 'loadmask',
+                        message: 'loading image...'
+                    });
+                console.log('onLstAttachmentsItemSingletap: requesting file system');
+                window.requestFileSystem(LocalFileSystem.PERSISTENT, 0,fsSuccess,fsFail)                          
             }//eof record
 
-        }       
+        } 
+        function fsSuccess(fileSystem){
+            var fileName = record.get('fileID') + '.' + record.get('name').split('.').pop();
+            console.log('onLstAttachmentsItemSingletap: fileURI: ' + fileSystem.root.fullPath + fileName)
+            fileSystem.root.getFile(fileName, {create: false, exclusive: false},
+                function(fileEntry){
+                    console.log('onLstAttachmentsItemSingletap: file exists so open: ' + fileEntry.fullPath)
+                    my.openFile(fileEntry);
+                },
+                function(error){
+                    console.log('onLstAttachmentsItemSingletap: file doesn"t exist');
+                     my.downloadFile(fileSystem,record,fileName);
+                            
+                }
+            );     
+        }
+        function fsFail(){
+            Ext.Viewport.setMasked(false);
+            Ext.Msg.alert('Lightning','there has been an error accessing the file system');                        
+            console.log('onLstAttachmentsItemSingletap: FileSystem Error');
+        }
     },
     downloadFile:function(fileSystem,record,fileName){
-        console.log('made it to download file');
+        var me = this;
+        console.log('downloadFile: made it to download file');
         //"http://www.w3.org/2011/web-apps-ws/papers/Nitobi.pdf"
         fileSystem.root.getFile(
                  "dummy.html", {create: true, exclusive: false}, 
@@ -96,57 +185,48 @@ Ext.define('Mob2.controller.Attachment', {
                         var sPath = fileEntry.fullPath.replace("dummy.html","");
                         var fileTransfer = new FileTransfer();
                         fileEntry.remove();
-                        var URI = Mob2.apiURL + 'attachment?id=' +Mob2.userID+ '&recordID='+record.get('recordID')+'&appointmentID=' + Mob2.appointmentID;
+                        var URI = Mob2.apiURL + 'attachment?id=' +Mob2.userID+ '&recordID='+record.get('recordID')+'&appointmentID=' + Mob2.appointmentID;  
+                     var options = new FileUploadOptions();
+                     options.chunkedMode = true;
+                     console.log('downloadFile: URI: ' +URI);
                         fileTransfer.download(
                               URI,
                               sPath + fileName,
-                              function(theFile) {
+                              function(theFile) {  
+                                  Ext.Viewport.setMasked(false);
                                    console.log("download complete: " + theFile.toURL());
-                                   window.plugins.fileOpener.open(theFile.fullPath);
+                                   //window.plugins.fileOpener.open(theFile.fullPath);
+                                  me.openFile(theFile);                                  
                               },
                               function(error) {
+                                  Ext.Viewport.setMasked(false);
+                                  Ext.Msg.alert('Lightning','there has been an error downloading the file<br>please try again later');
                                      console.log("download error source " + error.source);
                                      console.log("download error target " + error.target);
                                      console.log("upload error code: " + error.code);
-                              }
+                              },
+                             options,
+                             true
                          );
                 }, 
                 function(error){
                     console.log('got FileEntry Error');
+                    Ext.Msg.alert('Lightning','error downloing attachment');
+                    Ext.Viewport.setMasked(false);
                 });//eof GotFileEntry
+        
     },
-   
-    
-    attachmentAdd: function(imageName, fileID) {
-        var store = Ext.getStore('AttachmentsLocal');
-        var idno = Mob2.app.getApplication().getController('ctlCommon').getMaxID(store);       
-        var record =  Ext.create("Mob2.model.Attachment", {
-            appointmentID:Mob2.appointmentID,
-            recordID:idno,
-            fileName: imageName,
-            fileID:fileID,
-            mineType:'application/jpeg',
-            status:1
-        });
-        record.setDirty();
-        store.add(record);
-        console.log('Attachment Count: ' + store.getCount());
-        store.sync();
-        me.setDirty(Mob2.appointmentID,'Attachment',false);
-        var attach = me.getListAttachmentt();
-        attach.setStore(store);
-        attach.refresh();
-
-    },
-
-    generateUUID: function() {
-        var d = new Date().getTime();
-        var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            var r = (d + Math.random()*16)%16 | 0;
-            d = Math.floor(d/16);
-            return (c=='x' ? r : (r&0x7|0x8)).toString(16);
-        });
-        return uuid;
-    }
-
+   openFile:function(fileEntry){
+       console.log('made it t open file');
+       Ext.Viewport.setMasked(false);
+       if (device.platform === 'Android') {
+				//var path = fileEntry.fullPath;
+               console.log('path: ' + fileEntry.fullPath);
+				//window.open(fileEntry.fullPath, '_system');
+               window.plugins.fileOpener.open(fileEntry.fullPath);
+		}else {
+				var url = fileEntry.fullPath;        
+				window.open(url, '_blank');
+		}
+   }
 });

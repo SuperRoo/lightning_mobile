@@ -91,13 +91,13 @@ public class FileOpener extends CordovaPlugin {
             intent = new Intent(Intent.ACTION_VIEW);
             intent.setDataAndType(uri, "video/*");
         }
-                
+
         //if you want you can also define the intent type for any other file
-        
+
         //additionally use else clause below, to manage other unknown extensions
         //in this case, Android will show all applications installed on the device
         //so you can choose which application to use
-        
+
         // else {
         //     intent = new Intent(Intent.ACTION_VIEW);
         //     intent.setDataAndType(uri, "*/*");

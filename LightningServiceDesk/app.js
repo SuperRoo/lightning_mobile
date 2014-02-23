@@ -129,7 +129,6 @@ Ext.application({
             console.log('made it to launch - getApplication');
             this.getApplication().getController('ctlCommon').startApp(); 
         }
-
     }
 
 });

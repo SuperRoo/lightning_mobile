@@ -204,7 +204,8 @@ Ext.define('Mob2.controller.ctlCommon', {
         var me = this;
         if(Mob2.isOnline){ 
             //check that data has been saved
-            if(Ext.getStore('DirtyLocal').getCount() === 0){   
+            var dirtyCount = Ext.getStore('DirtyLocal').getCount()
+            if(dirtyCount === 0){   
                 var check;
                 var now = new Date().toUTCString();
                 console.log('appointment selected date: ' + now);

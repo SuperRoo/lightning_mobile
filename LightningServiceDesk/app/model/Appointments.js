@@ -140,6 +140,11 @@ Ext.define('Mob2.model.Appointments', {
                 defaultValue: 0,
                 name: 'riskTasksBatch',
                 type: 'int'
+            },
+            {
+                defaultValue: 0,
+                name: 'attachmentBatch',
+                type: 'int'
             }
         ]
     }

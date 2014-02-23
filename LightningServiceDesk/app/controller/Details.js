@@ -542,6 +542,7 @@ Ext.define('Mob2.controller.Details', {
             record.set('activityStatus',vals.activityStatus);
             bDirty = true;
         }
+        console.log('bDirty: ' + bDirty);
         if(bDirty){
             record.set('mode',2);
             Ext.getStore('AppointmentsLocal').sync();
@@ -631,13 +632,16 @@ Ext.define('Mob2.controller.Details', {
         data.riskSignature = record.get('riskSignature');
         data.riskAssessment = me.getApplication().getController('ctlCommon').getRAList(appointmentID);
         data.batch = record.get('appointmentBatch');
+        if (data.batch === null){data.batch=0}
         console.log('saving actvity record');
         Ext.Ajax.request({
             url: Mob2.apiURL + 'activity',    
             method:'POST',
             disableCaching: false,
             jsonData: JSON.stringify(data),
-            success: function(result){ 
+            timeout:60000,
+            success: function(result){
+                console.log('SaveActivity Success');
                 if(result.statusText === 'OK'){ 
                     console.log('saving successfule actvity record');
                     me.setDirty(appointmentID,'Activity',true); 
@@ -647,9 +651,13 @@ Ext.define('Mob2.controller.Details', {
                     record.set('appointmentBatch',batch+1);
                     Ext.getStore('AppointmentsLocal').sync();
                     me.saveData();
+                }else{
+                   console.log('SaveActivity Success StatusText: ' + result.statusText); 
+                   Mob2.app.getApplication().getController('ctlCommon').internetError();
                 }
             },
             failure: function(result){
+                console.log('Activity Save Error: ' + JSON.stringify(data));
                 Mob2.app.getApplication().getController('ctlCommon').internetError();
             }
         });
@@ -679,6 +687,7 @@ Ext.define('Mob2.controller.Details', {
             disableCaching: false,    
             jsonData: JSON.stringify(data), 
             method:'POST',
+            timeout:60000,
             success: function(result){
                 console.log('inventory save success');
                 debugger;
@@ -726,6 +735,7 @@ Ext.define('Mob2.controller.Details', {
                 }
             },
             failure: function(result){
+                console.log('Inventory Save Error: ' + JSON.stringify(data));
                 Mob2.app.getApplication().getController('ctlCommon').internetError();
             }
         });
@@ -754,6 +764,7 @@ Ext.define('Mob2.controller.Details', {
             jsonData: JSON.stringify(data),
             disableCaching: false, 
             method:'POST',
+            timeout:60000,
             success: function(result){
                 if(result.statusText === 'OK'){
                     console.log('contractor save success');
@@ -798,46 +809,160 @@ Ext.define('Mob2.controller.Details', {
 
             },
             failure: function(result){
+                console.log('Contractor Save Error: ' + JSON.stringify(data));
                 Mob2.app.getApplication().getController('ctlCommon').internetError();
             }
         });
     },
-
+    saveAttachment:function(appointmentID){
+       console.log('saveAttachment:function: saving attachment');
+        var me = this;
+        var data = {};
+        var store = Ext.getStore('AttachmentsLocal');
+        var aptRecord = me.getAppointmentRecord(appointmentID);
+        console.log('saveAttachment: aptrecord appointmentID: ' + aptRecord.get('appointmentID'));
+        console.log('saveAttachment: aptrecord batch ' + aptRecord.get('attachmentBatch'));
+        var attachRecord = null;
+        console.log('saveAttachment: store count before filter: ' + store.getCount() + 'store count all: ' + store.getAllCount());
+        store.clearFilter();
+        store.filterBy(function(rec){
+            return rec.get('mode') === 1 && rec.get('appointmentID') === Mob2.appointmentID;
+        });
+         console.log('saveAttachment: store count after filter: ' + store.getCount() + 'store count all: ' + store.getAllCount());
+        var record = store.first();
+        if(record){  
+            console.log('saveAttachment: got a record:' + record.get('recordID'));
+            attachRecord = record;
+            data.appointmentID = appointmentID;
+            data.URI = Mob2.userID;
+            data.recordID = record.get('recordID');
+            data.name = record.get('name');
+            data.fileID =  record.get('fileID');
+            data.mimeType = 'application/jpeg';
+            data.mode = record.get('mode');
+            console.log('saveAttachment: attachmentBatch: ' + aptRecord.get('attachmentBatch'));
+            data.batch = aptRecord.get('attachmentBatch')
+            if(data.batch === null){data.batch = 0;}
+            console.log('saveAttachment: data so far: ' + JSON.stringify(data));
+            window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, 
+                function(fileSystem) {
+                    console.log('saveAttachment: filesystem success');
+                    console.log('saveAttachment: filename: ' +record.get('fileID') + '.jpg');
+                    fileSystem.root.getFile(record.get('fileID') + '.jpg', {create: false, exclusive: false}, gotFileEntry,fail);
+                },fail);  
+        }
+        //callback functions
+        function gotFileEntry(fileEntry){
+        console.log('gotFileEntry: gotFileEntry success');            
+            fileEntry.file(win,
+                function(error){
+                 console.log('gotFileEntry: file get error: ' + error.code);                 
+            });
+        }
+        
+        function fail(error){
+            console.log('file read error: ' + error.code);
+        }
+        function win(file){
+            console.log('win: entering win(file)');
+            var reader = new FileReader();
+            reader.onloadend = function (evt) {
+                console.log("win: read success");
+                console.log('win: image length:' +evt.target.result.length);
+                data.image = evt.target.result;
+               sendAttachmentData(data);
+            };
+            reader.readAsDataURL(file);   
+        }
+        function sendAttachmentData(data){
+             console.log('sendAttachmentData: made it to function');
+             Ext.Ajax.request({
+                url: Mob2.apiURL + 'attachmentSave',
+                disableCaching: false,    
+                jsonData: JSON.stringify(data), 
+                method:'POST',
+                timeout:60000,
+                success: function(result){
+                    if(result.status === 200){
+                       console.log('sendAttachmentData: result.responseText: ' + result.responseText);
+                       var vals = Ext.JSON.decode(result.responseText,true);
+                       if(vals.status === 'success'){
+                           console.log('sendAttachmentData: Attachment Success');
+                           attachRecord.set('mode',0);
+                           attachRecord.set('recordID',result.recordID); 
+                           //reset batch
+                           var aptRecord = me.getAppointmentRecord(appointmentID);
+                           var batch = aptRecord.get('attachmentBatch');
+                           aptRecord.set('attachmentBatch',batch+1);
+                           me.setDirty(appointmentID,'Attachment',true);                           
+                           store.clearFilter();
+                           store.filter('appointmentID',Mob2.appointmentID);
+                           me.saveData();
+                       }else{
+                               console.log('sendAttachmentData: Attachment Server Failure: ' + vals.error  );
+                       }
+                                          
+                   }else{
+                        console.log('sendAttachmentData: Attachment Server Failure Status: ' + result.status);
+                   }                   
+                },
+                failure:function(response, opts){
+                  console.log('sendAttachmentData: Attachment Send Failure: ' + response.status);  
+                  console.log('sendAttachmentData: Attachment Send statusText: ' + response.statusText);
+                  console.log('sendAttachmentData: Attachment Send opts: ' + opts);
+                  Mob2.app.getApplication().getController('ctlCommon').internetError();
+                }
+            });            
+        }        
+        
+    },
     saveData: function() {
         //check for initial appointment
         var me = this;
-        var store=null;
+        var store = null;
         var retVal = '';
         Ext.Viewport.setMasked({
                 xtype: 'loadmask',
                 message: 'saving data'
         });
+        console.log('saveData: Mob2.isOnline: ' + Mob2.isOnline);
         if(Mob2.isOnline){ 
             var record = me.getDirtyRecord(Mob2.appointmentID);
             if(record !== null){
                 if (record.get('activityStatus') === 2 && record.get('mode') !== 0 ){
                     retVal = me.validateData();
                 }
-                if(retVal === ''){       
+                if(retVal === ''){ 
+                    writeDirty('start of save');
                     switch(record.get('name')){
                         case 'Inventory':
                         me.saveInventory(record.get('appointmentID'));
-                        console.log('saving inventory');
+                        console.log('saveData: saving inventory');
                         break;
                         case 'Contractor':
                         me.saveContractor(record.get('appointmentID'));
-                        console.log('saving contractor');
+                        console.log('saveData: saving contractor');
                         break;
                         case 'Activity':
                         me.saveActivity(record.get('appointmentID'));
-                        console.log('saving activity');
+                        console.log('saveData: saving activity');
+                        break;
+                        case 'Attachment':
+                        me.saveAttachment(record.get('appointmentID'));
+                        console.log('saveData: saving attachment');
                         break;
                     }
+                    if(Ext.getStore('DirtyLocal').getAllCount() === 0){
+                        Ext.Viewport.setMasked(false);
+                        console.log('saveData: mask off');
+                    }                    
+                     writeDirty('end of save');
                 }else{
                     Ext.Viewport.setMasked(false);
                     Ext.Msg.alert('Lightning','validation error: ' +retVal);            
                 }        
             }else{
+                Ext.Viewport.setMasked(false);
                 Ext.Msg.alert('Lightning','All data saved'); 
                 me.gotoAppointmentsView();
             }
@@ -845,7 +970,19 @@ Ext.define('Mob2.controller.Details', {
             Mob2.app.getApplication().getController('ctlCommon').internetError();
         }
 
-
+        function writeDirty(msg){
+            console.log('writing data for:' + msg);
+           recAll = Ext.getStore('DirtyLocal').getData().all;   
+            if(recAll.length === 0 ){
+                console.log('writeDirty: no dirty records');
+            }else{
+                 for(r=0;r<recAll.length;r++){
+                    record = recAll[r];
+                    console.log('writeDirty: dirtyRecord:' + record.get('name'));
+                 }
+            }
+           
+        }
     },
 
     getDirtyRecord: function(appointmentID) {
@@ -928,17 +1065,29 @@ Ext.define('Mob2.controller.Details', {
         var me = this;
         var bSave = true;
         var store = Ext.getStore('DirtyLocal');
-        var record =  store.findRecord('appointmentID',appointmentID);
-        if(record){   
-            if(record.get('name') === name && clear){        
+        var record = null
+        store.each(function(rec){
+            if(rec.get('appointmentID') === appointmentID && rec.get('name') === name){
+                record = rec;
+                return false
+            }
+        })
+       if(record){   
+            console.log('setDirty: record name: ' + record.get('name') + ' name: ' + name + ' clear: ' + clear);
+            if(record.get('name') === name && clear){ 
+                console.log('setDirty: removing record: ' + name);
                 store.remove(record);
                 store.sync();
                 bSave = false;
             }else if(record.get('name') === name && !clear){
                 bSave = false;
+                console.log('setDirty: ignoring record: ' +name);
             }   
+        }else{
+           console.log('setDirty: no record with appointmentID: ' +  appointmentID);
         }
-        if(bSave){
+        if(bSave && !clear){
+            console.log('setDirty: saving record: ' + name);
             var newRecord = Ext.create('Mob2.model.Dirty');
             newRecord.set('appointmentID',appointmentID);
             newRecord.set('name',name);
@@ -973,12 +1122,11 @@ Ext.define('Mob2.controller.Details', {
             }
         }
         return aptRecord
-    },
-
+    },   
     getMinute: function(val) {
         var me = this;
         var timeInt = parseInt(me.getApplication().getController('ctlCommon').getSysValue('TimeInterval'),10);    
-        if(timeInt === 'NaN'){timeInt=1};
+        if(timeInt === 'NaN'){timeInt=1}
         if (timeInt === 1){
             return val;
         }
@@ -1118,5 +1266,4 @@ Ext.define('Mob2.controller.Details', {
         Ext.Viewport.add(me.getFrmInventoryPicker());
         Ext.Viewport.setActiveItem(me.getFrmInventoryPicker());
     }
-
 });
