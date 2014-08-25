@@ -37,12 +37,13 @@
   "iOSStatusBarStyle": "Default",
   "AndroidHardwareAcceleration": "false",
   "BundleVersion": "1.05",
-  "iOSDisplayName": "Lightning Service Desk",
+  "iOSDisplayName": "",
   "iOSDeviceFamily": [
     "1",
     "2"
   ],
   "iOSBackgroundMode": [],
   "AndroidVersionCode": "5",
-  "Framework": "Cordova"
+  "Framework": "Cordova",
+  "DisplayName": "Lightning Service Desk"
 }
