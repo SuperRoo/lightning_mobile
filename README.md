@@ -1,4 +1,4 @@
 lightning_mobile
 ================
 
-mobile version of Lightnong Service Desk
+mobile version of Lightning Service Desk
